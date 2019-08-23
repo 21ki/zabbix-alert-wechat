@@ -13,48 +13,35 @@
 # $5: message subject
 # $6: message body
 
-CORP_ID="$1"
-CORP_SECRET="$2"
-AGENTID="$3"
-TAGID="$4"
+CORP_ID="$1"                            # wechat: corpid
+CORP_SECRET="$2"                        # wechat: corpsecret
+AGENTID="$3"                            # wechat: agentid
+TAGID="$4"                              # wechat: tagid
 
-MESSAGE="$5\n\n$6\n"
+ACCESS_TOKEN=""                         # wechat: access_token
+MESSAGE="$5\n\n$6\n"                    # content to send
+ERR_CODE=""                             # errcode for send message
 
+# url to get access_key
+GET_URL="https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=${CORP_ID}&corpsecret=${CORP_SECRET}"
+
+# file cached access_key
 TOKEN_CACHE_FILE=/var/lib/zabbix/wechat_token
 
 # ======================================
 # Get access_token
-# $1: corpid
-# $2: corpsecret
-# return: access_token
-function getAccessToken() {
-    GET_URL="https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=${CORP_ID}&corpsecret=${CORP_SECRET}"
+# set: ACCESS_TOKEN
 
-    printf $(wget -q -O - "${GET_URL}" | grep -o -P '(?<=access_token":")[^"]+')
+function getAccessToken() {
+     ACCESS_TOKEN=$(wget -q -O - "${GET_URL}" | grep -o -P '(?<=access_token":")[^"]+')
 }
 
 # ======================================
 # Send msg
-# $1: access_token
-# $2: totag
-# $3: agentid
-# $4: msg content
-# return: errcode
+# set: ERR_CODE
 
-# msg body sample
-# {
-#  "totag" : "abelzhu|ZhuShengben",
-#  "msgtype" : "text",
-#  "agentid" : 1000002,
-#  "text" : {
-#      "content" : "test msg"
-#  },
-#  "safe":0
-# }
-
-#POST_URL="https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=$1"
 function sendMsg() {
-    POST_URL="https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=$1"
+    POST_URL="https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${ACCESS_TOKEN}"
 
     # data to post
     POST_DATA="{\
@@ -68,32 +55,33 @@ function sendMsg() {
     }"
 
     # send msg, return errcode
-    printf $(wget -q -O - --post-data="${POST_DATA}" ${POST_URL} | grep -o -P '(?<=errcode":)\d+')
+    ERR_CODE=$(wget -q -O - --post-data="${POST_DATA}" ${POST_URL} | grep -o -P '(?<=errcode":)\d+')
 }
 
+# ======================================
 # alert
 
 if [ -f "${TOKEN_CACHE_FILE}" ] && read ACCESS_TOKEN < "${TOKEN_CACHE_FILE}"; then
     # access_token cache exist, send msg
-    ERR_CODE=$(sendMsg "${ACCESS_TOKEN}")
+    sendMsg
 
     # if send msg error(access_token cache expired), get new access_token and re-send msg
     if [[ "${ERR_CODE}" -ne 0 ]]; then
         # get online and write to cache
-        ACCESS_TOKEN="$(getAccessToken)"
+        getAccessToken
         echo -n "${ACCESS_TOKEN}" > "${TOKEN_CACHE_FILE}"
 
         # send msg
-        ERR_CODE=$(sendMsg "${ACCESS_TOKEN}")
+        sendMsg
     fi
     # if access_token cache expired, get new one and sender msg again
 else
     # access_token cache not exist, get online and write to cache
-    ACCESS_TOKEN="$(getAccessToken)"
+    getAccessToken
     echo -n "${ACCESS_TOKEN}" > "${TOKEN_CACHE_FILE}"
 
     # send msg
-    ERR_CODE=$(sendMsg "${ACCESS_TOKEN}")
+    sendMsg
 fi
 
 exit ${ERR_CODE}
