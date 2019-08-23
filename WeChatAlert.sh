@@ -33,7 +33,7 @@ TOKEN_CACHE_FILE=/var/lib/zabbix/wechat_token
 # set: ACCESS_TOKEN
 
 function getAccessToken() {
-     ACCESS_TOKEN=$(wget -q -O - "${GET_URL}" | grep -o -P '(?<=access_token":")[^"]+')
+     ACCESS_TOKEN=$(wget -q -O - "${GET_URL}" | grep -o -P '(?<=access_token":")[^"]+' 2>/dev/null)
 }
 
 # ======================================
@@ -55,7 +55,7 @@ function sendMsg() {
     }"
 
     # send msg, return errcode
-    ERR_CODE=$(wget -q -O - --post-data="${POST_DATA}" ${POST_URL} | grep -o -P '(?<=errcode":)\d+')
+    ERR_CODE=$(wget -q -O - --post-data="${POST_DATA}" ${POST_URL} | grep -o -P '(?<=errcode":)\d+' 2>/dev/null)
 }
 
 # ======================================
