@@ -1,10 +1,13 @@
-#!/bin/bash
+#!/bin/sh
 
 # Filename:    WeChatAlert.sh
 # Revision:    1.0
-# Date:        2019/08/21
+# Date:        2019/08/26
 # Author:      aeternus <aeternus@aliyun.com>
 # Description: Zabbix Alert Script - WeChat
+# Requirements:
+#   - Gnu/wget
+#   - grep with perl regular expression support
 
 # $1: corpid
 # $2: corpsecret
@@ -17,10 +20,10 @@ CORP_ID="$1"                            # wechat: corpid
 CORP_SECRET="$2"                        # wechat: corpsecret
 AGENTID="$3"                            # wechat: agentid
 TAGID="$4"                              # wechat: tagid
+MESSAGE="$5\n\n$6\n"                    # whcaht: content to send
 
 ACCESS_TOKEN=""                         # wechat: access_token
-MESSAGE="$5\n\n$6\n"                    # content to send
-ERR_CODE=""                             # errcode for send message
+ERR_CODE=""                             # result.errcode after send message
 
 # url to get access_key
 GET_URL="https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=${CORP_ID}&corpsecret=${CORP_SECRET}"
@@ -54,7 +57,7 @@ function sendMsg() {
       \"safe\" : 0
     }"
 
-    # send msg, return errcode
+    # send msg, get errcode
     ERR_CODE=$(wget -q -O - --post-data="${POST_DATA}" ${POST_URL} | grep -o -P '(?<=errcode":)\d+' 2>/dev/null)
 }
 
@@ -67,16 +70,16 @@ if [ -f "${TOKEN_CACHE_FILE}" ] && read ACCESS_TOKEN < "${TOKEN_CACHE_FILE}"; th
 
     # if send msg error(access_token cache expired), get new access_token and re-send msg
     if [[ "${ERR_CODE}" -ne 0 ]]; then
-        # get online and write to cache
+        # get access_token and save to cache file
         getAccessToken
         echo -n "${ACCESS_TOKEN}" > "${TOKEN_CACHE_FILE}"
 
         # send msg
         sendMsg
     fi
-    # if access_token cache expired, get new one and sender msg again
+    # if access_token cache expired, get new one and send msg again
 else
-    # access_token cache not exist, get online and write to cache
+    # access_token cache not exist, get from wechat and save to cache file
     getAccessToken
     echo -n "${ACCESS_TOKEN}" > "${TOKEN_CACHE_FILE}"
 

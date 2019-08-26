@@ -3,6 +3,11 @@ zabbix alertscripts - WeChat
 
 Send wechat msg using tag.
 
+# Requirements
+
+* Gnu/wget
+* grep with perl regular expression support
+
 # Parameters
 
 * $1: corpid
