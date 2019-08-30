@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 # Filename:    WeChatAlert.sh
-# Revision:    1.0
-# Date:        2019/08/26
+# Revision:    1.1
+# Date:        2019/08/30
 # Author:      aeternus <aeternus@aliyun.com>
 # Description: Zabbix Alert Script - WeChat
 # Requirements:
@@ -16,20 +16,23 @@
 # $5: message subject
 # $6: message body
 
-CORP_ID="$1"                            # wechat: corpid
-CORP_SECRET="$2"                        # wechat: corpsecret
-AGENTID="$3"                            # wechat: agentid
-TAGID="$4"                              # wechat: tagid
-MESSAGE="$5\n\n$6\n"                    # whcaht: content to send
+# ======================================
+# Print usage info
 
-ACCESS_TOKEN=""                         # wechat: access_token
-ERR_CODE=""                             # result.errcode after send message
+function usage() {
+    printf "Usage:\n"
+    printf "  WeChatAlert.sh [options]\n\n"
 
-# url to get access_key
-GET_URL="https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=${CORP_ID}&corpsecret=${CORP_SECRET}"
+    printf "Send Zabbix Alert Message to WeChat Work.\n\n"
 
-# file cached access_key
-TOKEN_CACHE_FILE=/var/lib/zabbix/wechat_token
+    printf "Options:\n"
+    printf "  -i, --corpid <corpid>             WeChat corp id, required\n"
+    printf "  -s, --corpsecret <corpsecret>     WeChat corp secret, required\n"
+    printf "  -a, --agentid <agentid>           WeChat APP id, required\n"
+    printf "  -t, --tagid <tagid>               WeChat tag id, required\n"
+    printf "  -j, --alert-subject <subject>     alert subject, required\n"
+    printf "  -c, --alert-content <content>     alert content, required\n"
+}
 
 # ======================================
 # Get access_token
@@ -52,7 +55,7 @@ function sendMsg() {
       \"msgtype\" : \"text\",\
       \"agentid\" : ${AGENTID},\
       \"text\" : {\
-        \"content\" : \"${MESSAGE}\"\
+        \"content\" : \"${ALERT}\"\
       },\
       \"safe\" : 0
     }"
@@ -60,6 +63,44 @@ function sendMsg() {
     # send msg, get errcode
     ERR_CODE=$(wget -q -O - --post-data="${POST_DATA}" ${POST_URL} | grep -o -P '(?<=errcode":)\d+' 2>/dev/null)
 }
+
+# read the options
+TEMP=$(getopt -o i:s:a:t:j:c: -l corpid:,corpsecret:,agentid:,tagid:,alert-subject:,alert-content: -- "$@")
+if [ $? != 0 ]; then printf "Invalid argument!\n\n"; usage; exit 1; fi
+eval set -- "$TEMP"
+
+# extract options and their arguments into variables.
+while true; do
+  case "$1" in
+    -i|--corpid)              CORP_ID=$2; shift 2 ;;
+    -s|--corpsecret)          CORP_SECRET=$2; shift 2 ;;
+    -a|--agentid)             AGENTID=$2; shift 2 ;;
+    -t|--tagid)               TAGID=$2; shift 2 ;;
+    -j|--alert-subject)       ALERT_SUBJECT="$2"; shift 2 ;;
+    -c|--alert-content)       ALERT_CONTENT="$2"; shift 2 ;;
+    --)                       shift; break ;;
+    *)                        printf "Internal error!\n\n"; usage; exit 1 ;;
+  esac
+done
+
+# check arguments
+if [ -z "$CORP_ID" ] || [ -z "$CORP_SECRET" ] || [ -z "$AGENTID" ] \
+  || [ -z "$TAGID" ] || [ -z "$ALERT_SUBJECT" ] || [ -z "$ALERT_CONTENT" ]; then
+  printf "Missing some arguments!\n\n"
+  usage
+  exit 1
+fi
+
+ALERT="${ALERT_SUBJECT}\n\n${ALERT_CONTENT}"                    # whcaht: content to send
+
+ACCESS_TOKEN=""                         # wechat: access_token
+ERR_CODE=""                             # result.errcode after send message
+
+# url to get access_key
+GET_URL="https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=${CORP_ID}&corpsecret=${CORP_SECRET}"
+
+# file cached access_key
+TOKEN_CACHE_FILE=/var/lib/zabbix/wechat_token
 
 # ======================================
 # alert
