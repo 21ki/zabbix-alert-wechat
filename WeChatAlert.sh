@@ -9,13 +9,6 @@
 #   - Gnu/wget
 #   - grep with perl regular expression support
 
-# $1: corpid
-# $2: corpsecret
-# $3: agentid
-# $4: tagid
-# $5: message subject
-# $6: message body
-
 # ======================================
 # Print usage info
 
