@@ -50,7 +50,7 @@ function sendMsg() {
       \"text\" : {\
         \"content\" : \"${ALERT}\"\
       },\
-      \"safe\" : 0
+      \"safe\" : 0\
     }"
 
     # send msg, get errcode
