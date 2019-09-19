@@ -103,7 +103,7 @@ if [ -f "${TOKEN_CACHE_FILE}" ] && read ACCESS_TOKEN < "${TOKEN_CACHE_FILE}"; th
     sendMsg
 
     # if send msg error(access_token cache expired), get new access_token and re-send msg
-    if [[ "${ERR_CODE}" -ne 0 ]]; then
+    if [ $ERR_CODE -ne 0 ]; then
         # get access_token and save to cache file
         getAccessToken
         echo -n "${ACCESS_TOKEN}" > "${TOKEN_CACHE_FILE}"
