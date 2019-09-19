@@ -32,7 +32,7 @@ function usage() {
 # set: ACCESS_TOKEN
 
 function getAccessToken() {
-     ACCESS_TOKEN=$(wget -q -O - "${GET_URL}" | grep -o -P '(?<=access_token":")[^"]+' 2>/dev/null)
+    ACCESS_TOKEN=$(wget -q -O - "${GET_URL}" | grep -o -P '(?<=access_token":")[^"]+' 2>/dev/null)
 }
 
 # ======================================
@@ -64,24 +64,24 @@ eval set -- "$TEMP"
 
 # extract options and their arguments into variables.
 while true; do
-  case "$1" in
-    -i|--corpid)              CORP_ID=$2; shift 2 ;;
-    -s|--corpsecret)          CORP_SECRET=$2; shift 2 ;;
-    -a|--agentid)             AGENTID=$2; shift 2 ;;
-    -t|--tagid)               TAGID=$2; shift 2 ;;
-    -j|--alert-subject)       ALERT_SUBJECT="$2"; shift 2 ;;
-    -c|--alert-content)       ALERT_CONTENT="$2"; shift 2 ;;
-    --)                       shift; break ;;
-    *)                        printf "Internal error!\n\n"; usage; exit 1 ;;
-  esac
+    case "$1" in
+        -i|--corpid)              CORP_ID=$2; shift 2 ;;
+        -s|--corpsecret)          CORP_SECRET=$2; shift 2 ;;
+        -a|--agentid)             AGENTID=$2; shift 2 ;;
+        -t|--tagid)               TAGID=$2; shift 2 ;;
+        -j|--alert-subject)       ALERT_SUBJECT="$2"; shift 2 ;;
+        -c|--alert-content)       ALERT_CONTENT="$2"; shift 2 ;;
+        --)                       shift; break ;;
+        *)                        printf "Internal error!\n\n"; usage; exit 1 ;;
+    esac
 done
 
 # check arguments
 if [ -z "$CORP_ID" ] || [ -z "$CORP_SECRET" ] || [ -z "$AGENTID" ] \
   || [ -z "$TAGID" ] || [ -z "$ALERT_SUBJECT" ] || [ -z "$ALERT_CONTENT" ]; then
-  printf "Missing some arguments!\n\n"
-  usage
-  exit 1
+    printf "Missing some arguments!\n\n"
+    usage
+    exit 1
 fi
 
 ALERT="${ALERT_SUBJECT}\n\n${ALERT_CONTENT}"                    # whcaht: content to send
