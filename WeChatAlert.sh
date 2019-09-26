@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Filename:    WeChatAlert.sh
-# Revision:    1.1
-# Date:        2019/08/30
+# Revision:    1.2
+# Date:        2019/09/26
 # Author:      aeternus <aeternus@aliyun.com>
 # Description: Zabbix Alert Script - WeChat
 # Requirements:
@@ -32,7 +32,7 @@ function usage() {
 # set: ACCESS_TOKEN
 
 function getAccessToken() {
-    ACCESS_TOKEN=$(wget -q -O - "${GET_URL}" | grep -o -P '(?<=access_token":")[^"]+' 2>/dev/null)
+    ACCESS_TOKEN=$(wget -q -O - "$GET_URL" | grep -o -P '(?<=access_token":")[^"]+' 2>/dev/null)
 }
 
 # ======================================
@@ -40,21 +40,21 @@ function getAccessToken() {
 # set: ERR_CODE
 
 function sendMsg() {
-    POST_URL="https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${ACCESS_TOKEN}"
+    POST_URL="https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=$ACCESS_TOKEN"
 
     # data to post
     POST_DATA="{\
-      \"totag\" : ${TAGID},\
+      \"totag\" : $TAGID,\
       \"msgtype\" : \"text\",\
-      \"agentid\" : ${AGENTID},\
+      \"agentid\" : $AGENTID,\
       \"text\" : {\
-        \"content\" : \"${ALERT}\"\
+        \"content\" : \"$ALERT\"\
       },\
       \"safe\" : 0\
     }"
 
     # send msg, get errcode
-    ERR_CODE=$(wget -q -O - --post-data="${POST_DATA}" ${POST_URL} | grep -o -P '(?<=errcode":)\d+' 2>/dev/null)
+    ERR_CODE=$(wget -q -O - --post-data="$POST_DATA" $POST_URL | grep -o -P '(?<=errcode":)\d+' 2>/dev/null)
 }
 
 # read the options
@@ -69,8 +69,8 @@ while true; do
         -s|--corpsecret)          CORP_SECRET=$2; shift 2 ;;
         -a|--agentid)             AGENTID=$2; shift 2 ;;
         -t|--tagid)               TAGID=$2; shift 2 ;;
-        -j|--alert-subject)       ALERT_SUBJECT="$2"; shift 2 ;;
-        -c|--alert-content)       ALERT_CONTENT="$2"; shift 2 ;;
+        -j|--alert-subject)       ALERT_SUBJECT=${2//\"/\\\"}; shift 2 ;;
+        -c|--alert-content)       ALERT_CONTENT=${2//\"/\\\"}; shift 2 ;;
         --)                       shift; break ;;
         *)                        printf "Internal error!\n\n"; usage; exit 1 ;;
     esac
@@ -84,13 +84,13 @@ if [ -z "$CORP_ID" ] || [ -z "$CORP_SECRET" ] || [ -z "$AGENTID" ] \
     exit 1
 fi
 
-ALERT="${ALERT_SUBJECT}\n\n${ALERT_CONTENT}"                    # whcaht: content to send
+ALERT="$ALERT_SUBJECT\n\n$ALERT_CONTENT"                    # whcaht: content to send
 
 ACCESS_TOKEN=""                         # wechat: access_token
 ERR_CODE=""                             # result.errcode after send message
 
 # url to get access_key
-GET_URL="https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=${CORP_ID}&corpsecret=${CORP_SECRET}"
+GET_URL="https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=$CORP_ID&corpsecret=$CORP_SECRET"
 
 # file cached access_key
 TOKEN_CACHE_FILE=/var/lib/zabbix/wechat_token
@@ -98,7 +98,7 @@ TOKEN_CACHE_FILE=/var/lib/zabbix/wechat_token
 # ======================================
 # alert
 
-if [ -f "${TOKEN_CACHE_FILE}" ] && read ACCESS_TOKEN < "${TOKEN_CACHE_FILE}"; then
+if [ -f "$TOKEN_CACHE_FILE" ] && read ACCESS_TOKEN < "$TOKEN_CACHE_FILE"; then
     # access_token cache exist, send msg
     sendMsg
 
@@ -106,7 +106,7 @@ if [ -f "${TOKEN_CACHE_FILE}" ] && read ACCESS_TOKEN < "${TOKEN_CACHE_FILE}"; th
     if [ $ERR_CODE -ne 0 ]; then
         # get access_token and save to cache file
         getAccessToken
-        echo -n "${ACCESS_TOKEN}" > "${TOKEN_CACHE_FILE}"
+        echo -n "$ACCESS_TOKEN" > "$TOKEN_CACHE_FILE"
 
         # send msg
         sendMsg
@@ -115,10 +115,10 @@ if [ -f "${TOKEN_CACHE_FILE}" ] && read ACCESS_TOKEN < "${TOKEN_CACHE_FILE}"; th
 else
     # access_token cache not exist, get from wechat and save to cache file
     getAccessToken
-    echo -n "${ACCESS_TOKEN}" > "${TOKEN_CACHE_FILE}"
+    echo -n "$ACCESS_TOKEN" > "$TOKEN_CACHE_FILE"
 
     # send msg
     sendMsg
 fi
 
-exit ${ERR_CODE}
+exit $ERR_CODE
